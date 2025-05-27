@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - StyleShop</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">StyleShop Admin</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="adminNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="#">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <aside class="sidebar">
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="#product-management"><i class="fas fa-box me-2"></i>Product Management</a>
+                <a class="nav-link" href="#site-settings"><i class="fas fa-cog me-2"></i>Site Settings</a>
+                <a class="nav-link" href="#chat-overview"><i class="fas fa-comments me-2"></i>Chat Overview</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <section id="product-management" class="admin-section">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Product Management</h2>
+                    <div>
+                        <button class="btn btn-success me-2" id="addVariantBtn"><i class="fas fa-plus me-2"></i>Add New Variant</button>
+                        <button class="btn btn-outline-primary" id="editProductDetailsBtn"><i class="fas fa-edit me-2"></i>Edit Base Product</button>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Product Form (Initially Hidden) -->
+                <div class="card mb-4" id="addProductFormCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 id="productFormTitle">Add New Variant</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="productForm">
+                            <input type="hidden" id="productId" value="">
+                            <input type="hidden" id="variantId" value="">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="productName" class="form-label">Product Name *</label>
+                                        <input type="text" class="form-control" id="productName" value="Premium Cotton T-Shirt" required readonly>
+                                        <small class="text-muted">Base product name (edit using the "Edit Base Product" button)</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="variantColor" class="form-label">Color Name *</label>
+                                        <input type="text" class="form-control" id="variantColor" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="variantColorCode" class="form-label">Color Code (HEX) *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">#</span>
+                                            <input type="text" class="form-control" id="variantColorCode" placeholder="e.g. dc3545" required>
+                                            <button type="button" class="btn btn-outline-secondary" id="colorPickerBtn">
+                                                <i class="fas fa-eye-dropper"></i>
+                                            </button>
+                                        </div>
+                                        <div class="mt-2">
+                                            <label class="form-label">Color Preview:</label>
+                                            <div id="colorPreview" style="width: 50px; height: 50px; border-radius: 5px; border: 1px solid #ddd;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="variantPrice" class="form-label">Price ($) *</label>
+                                        <input type="number" class="form-control" id="variantPrice" step="0.01" value="19.99" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="variantStock" class="form-label">Stock Quantity *</label>
+                                        <input type="number" class="form-control" id="variantStock" min="0" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="variantImageUpload" class="form-label">Variant Image *</label>
+                                        <input type="file" class="form-control" id="variantImageUpload" accept="image/*">
+                                        <img id="variantImagePreview" src="#" alt="Image Preview" class="img-thumbnail mt-2" style="display:none; max-height: 150px;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary me-2">Save Variant</button>
+                                <button type="button" class="btn btn-secondary" id="cancelProductFormBtn">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Base Product Edit Modal (Initially Hidden) -->
+                <div class="modal fade" id="baseProductModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Base Product Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="baseProductForm">
+                                    <div class="mb-3">
+                                        <label for="baseProductName" class="form-label">Product Name *</label>
+                                        <input type="text" class="form-control" id="baseProductName" value="Premium Cotton T-Shirt" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="baseProductDescription" class="form-label">Description</label>
+                                        <textarea class="form-control" id="baseProductDescription" rows="4">Made from 100% premium cotton, our t-shirts offer unmatched comfort and durability. Perfect for casual wear or as a wardrobe staple.</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="baseProductSizes" class="form-label">Available Sizes (comma separated)</label>
+                                            <input type="text" class="form-control" id="baseProductSizes" value="S, M, L, XL, XXL">
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" id="saveBaseProductBtn">Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product List -->
+                <h5>Product Variants</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Image</th>
+                                <th>Product</th>
+                                <th>Color</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productList">
+                            <!-- Dummy Product Variants -->
+                            <tr>
+                                <td><img src="assets/red.png" alt="Product Image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                                <td>Premium Cotton T-Shirt</td>
+                                <td><span class="color-swatch" style="background-color: #dc3545; display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> Red</td>
+                                <td>$19.99</td>
+                                <td>10</td>
+                                <td><span class="badge bg-success">In Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" data-variant="Red"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete" data-variant="Red"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><img src="assets/white.png" alt="Product Image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                                <td>Premium Cotton T-Shirt</td>
+                                <td><span class="color-swatch" style="background-color: #ffffff; display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px; border: 1px solid #ddd;"></span> White</td>
+                                <td>$19.99</td>
+                                <td>5</td>
+                                <td><span class="badge bg-warning text-dark">Low Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" data-variant="White"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete" data-variant="White"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><img src="assets/black.jpeg" alt="Product Image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                                <td>Premium Cotton T-Shirt</td>
+                                <td><span class="color-swatch" style="background-color: #212529; display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> Black</td>
+                                <td>$19.99</td>
+                                <td>0</td>
+                                <td><span class="badge bg-danger">Out of Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" data-variant="Black"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete" data-variant="Black"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><img src="assets/gray.png" alt="Product Image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                                <td>Premium Cotton T-Shirt</td>
+                                <td><span class="color-swatch" style="background-color: #6c757d; display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> Gray</td>
+                                <td>$19.99</td>
+                                <td>20</td>
+                                <td><span class="badge bg-success">In Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" data-variant="Gray"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete" data-variant="Gray"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><img src="assets/green.png" alt="Product Image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                                <td>Premium Cotton T-Shirt</td>
+                                <td><span class="color-swatch" style="background-color: #198754; display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> Green</td>
+                                <td>$19.99</td>
+                                <td>2</td>
+                                <td><span class="badge bg-warning text-dark">Low Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" data-variant="Green"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete" data-variant="Green"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><img src="assets/blue.png" alt="Product Image" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;"></td>
+                                <td>Premium Cotton T-Shirt</td>
+                                <td><span class="color-swatch" style="background-color: #0d6efd; display: inline-block; width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> Blue</td>
+                                <td>$19.99</td>
+                                <td>15</td>
+                                <td><span class="badge bg-success">In Stock</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" title="Edit" data-variant="Blue"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete" data-variant="Blue"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="site-settings" class="admin-section d-none">
+                <h2>Site Settings</h2>
+                <p><em>(Content for managing site-wide settings like colors, promotional banners, etc.)</em></p>
+            </section>
+
+            <section id="chat-overview" class="admin-section d-none">
+                <h2>Chat Overview</h2>
+                <p><em>(A list of active/recent user chats. Clicking one would open a detailed chat view. This requires backend and WebSocket integration.)</em></p>
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action">Chat with User: John Doe (3 new messages)</a>
+                    <a href="#" class="list-group-item list-group-item-action">Chat with User: Jane Smith (1 new message)</a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="admin-scripts.js"></script>
+</body>
+</html> 
