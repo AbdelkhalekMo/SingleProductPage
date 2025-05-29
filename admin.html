@@ -54,11 +54,7 @@
                             
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="productName" class="form-label">Product Name *</label>
-                                        <input type="text" class="form-control" id="productName" value="Premium Cotton T-Shirt" required readonly>
-                                        <small class="text-muted">Base product name (edit using the "Edit Base Product" button)</small>
-                                    </div>
+                                    <!-- Product name field removed as per requirement -->
                                     
                                     <div class="mb-3">
                                         <label for="variantColor" class="form-label">Color Name *</label>
@@ -126,10 +122,35 @@
                                         <label for="baseProductDescription" class="form-label">Description</label>
                                         <textarea class="form-control" id="baseProductDescription" rows="4">Made from 100% premium cotton, our t-shirts offer unmatched comfort and durability. Perfect for casual wear or as a wardrobe staple.</textarea>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label for="baseProductSizes" class="form-label">Available Sizes (comma separated)</label>
-                                            <input type="text" class="form-control" id="baseProductSizes" value="S, M, L, XL, XXL">
+                                    
+                                    <!-- Size Management -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Available Sizes</label>
+                                        <div id="sizesContainer" class="d-flex flex-wrap gap-2 mb-2">
+                                            <!-- Sizes will be dynamically inserted here -->
+                                        </div>
+                                        <div class="input-group mt-2">
+                                            <input type="text" class="form-control" id="newSizeInput" placeholder="Enter new size (e.g. XXS, 3XL)">
+                                            <button type="button" class="btn btn-outline-success" id="addSizeBtn">
+                                                <i class="fas fa-plus"></i> Add Size
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Color Management -->
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="enableColorSelection" checked>
+                                            <label class="form-check-label" for="enableColorSelection">Enable Color Selection</label>
+                                        </div>
+                                        <div id="colorSelectionControls">
+                                            <label class="form-label">Available Colors</label>
+                                            <div id="availableColorsContainer" class="d-flex flex-wrap gap-2 mb-2">
+                                                <!-- Color checkboxes will be dynamically inserted here -->
+                                            </div>
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>Check or uncheck colors to show/hide them in the store
+                                            </div>
                                         </div>
                                     </div>
                                 </form>
@@ -238,7 +259,103 @@
 
             <section id="site-settings" class="admin-section d-none">
                 <h2>Site Settings</h2>
-                <p><em>(Content for managing site-wide settings like colors, promotional banners, etc.)</em></p>
+                
+                <!-- Logo and Brand Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Logo & Brand Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="logoSettingsForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="siteLogo" class="form-label">Site Logo URL</label>
+                                        <input type="text" class="form-control" id="siteLogo" placeholder="https://example.com/logo.png">
+                                        <small class="text-muted">Enter a direct URL to your logo image</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="siteTitle" class="form-label">Site Title</label>
+                                        <input type="text" class="form-control" id="siteTitle" placeholder="StyleShop">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center">
+                                <div id="logoPreview" class="mb-3 text-center" style="height: 60px;">
+                                    <!-- Logo preview will be shown here -->
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Brand Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Contact Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Contact Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="contactSettingsForm">
+                            <div class="mb-3">
+                                <label for="whatsappNumber" class="form-label">WhatsApp Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+</span>
+                                    <input type="text" class="form-control" id="whatsappNumber" placeholder="201157299077">
+                                </div>
+                                <small class="text-muted">Enter number without the leading + symbol. This number will be used for WhatsApp button and contact forms.</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Save Contact Settings</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Hero Section Settings -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Hero Section Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="heroSettingsForm">
+                            <div class="mb-3">
+                                <label for="heroHeading" class="form-label">Hero Heading</label>
+                                <input type="text" class="form-control" id="heroHeading" placeholder="Elevate Your Style with Our Premium T-Shirt Collection">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="heroSubheading" class="form-label">Hero Subheading</label>
+                                <input type="text" class="form-control" id="heroSubheading" placeholder="Experience unparalleled comfort and sophisticated design. Crafted for the modern individual.">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="saleText" class="form-label">Sale Badge Text</label>
+                                <input type="text" class="form-control" id="saleText" placeholder="Limited Time: 30% OFF!">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="discountPercentage" class="form-label">Discount Percentage</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="discountPercentage" min="0" max="100" placeholder="30">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">This will automatically calculate the discounted price in the product section.</small>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="showSaleBadge">
+                                <label class="form-check-label" for="showSaleBadge">
+                                    Show Sale Badge
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">Save Hero Settings</button>
+                        </form>
+                    </div>
+                </div>
             </section>
 
             <section id="chat-overview" class="admin-section d-none">

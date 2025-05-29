@@ -4,12 +4,19 @@
         let quantity = 1;
         let cart = [];
         const WHATSAPP_NUMBER = '+201157299077'; // Updated WhatsApp number
+        
+        // Base product settings (will be updated from localStorage if available)
+        const baseProductSettings = {
+            enableColorSelection: true,
+            enabledColors: ["Red", "White", "Black", "Gray", "Green", "Blue"],
+            sizes: ["S", "M", "L", "XL", "XXL"]
+        };
 
         // Product Variants Data - Including stock for each color
         const productVariants = [
             { name: "Red", imageSrc: "assets/red.png", colorCode: "#dc3545", stock: 10, price: 19.99 },
             { name: "White", imageSrc: "assets/white.png", colorCode: "#ffffff", stock: 5, price: 19.99, border: "2px solid #ddd" },
-            { name: "Black", imageSrc: "assets/black.jpeg", colorCode: "#212529", stock: 0, price: 19.99 },
+            { name: "Black", imageSrc: "assets/black.jpeg", colorCode: "#000000", stock: 15, price: 19.99 },
             { name: "Gray", imageSrc: "assets/gray.png", colorCode: "#6c757d", stock: 20, price: 19.99 },
             { name: "Green", imageSrc: "assets/green.png", colorCode: "#198754", stock: 2, price: 19.99 },
             { name: "Blue", imageSrc: "assets/blue.png", colorCode: "#0d6efd", stock: 15, price: 19.99 }
@@ -88,6 +95,11 @@
             colorOptionsContainer.innerHTML = ''; // Clear existing options
 
             productVariants.forEach(variant => {
+                // Skip disabled colors if color selection is enabled
+                if (baseProductSettings.enableColorSelection && !baseProductSettings.enabledColors.includes(variant.name)) {
+                    return;
+                }
+                
                 const optionDiv = document.createElement('div');
                 optionDiv.classList.add('color-option-wrapper', 'text-center', 'mb-2');
                 optionDiv.style.width = '70px'; // Adjust as needed
@@ -177,12 +189,30 @@
 
         // Size selection
         function selectSize(size) {
+            console.log('Selecting size:', size);
             selectedSize = size;
-            document.getElementById('selectedSize').textContent = size;
+            
+            const selectedSizeElement = document.getElementById('selectedSize');
+            if (selectedSizeElement) {
+                selectedSizeElement.textContent = size;
+            } else {
+                console.error('Selected size element not found in the DOM');
+            }
             
             // Update visual selection
-            document.querySelectorAll('.size-option').forEach(el => el.classList.remove('selected'));
-            document.querySelector(`[data-size="${size}"]`).classList.add('selected');
+            const sizeOptions = document.querySelectorAll('.size-option');
+            if (sizeOptions.length > 0) {
+                sizeOptions.forEach(el => el.classList.remove('selected'));
+                
+                const selectedOption = document.querySelector(`.size-option[data-size="${size}"]`);
+                if (selectedOption) {
+                    selectedOption.classList.add('selected');
+                } else {
+                    console.error(`Size option element for size ${size} not found`);
+                }
+            } else {
+                console.error('No size option elements found in the DOM');
+            }
         }
 
         // Quantity change
@@ -193,22 +223,29 @@
 
         // Add to cart
         function addToCart() {
+            console.log('Adding to cart with color:', selectedColor, 'size:', selectedSize, 'quantity:', quantity);
+            
             if (!selectedColor || !selectedSize) {
+                console.error('Missing color or size selection');
                 showToast('Please select both color and size first.', 'error');
                 return;
             }
 
             const selectedVariant = productVariants.find(v => v.name === selectedColor);
             if (!selectedVariant) {
+                console.error('Selected color variant not found:', selectedColor);
                 showToast('Selected color variant not found. Please try again.', 'error');
                 return;
             }
 
             if (selectedVariant.stock <= 0) {
+                console.error('Selected variant out of stock:', selectedColor);
                 showToast('This item is currently out of stock.', 'error');
                 return;
             }
+            
             if (quantity > selectedVariant.stock) {
+                console.error('Quantity exceeds stock. Requested:', quantity, 'Available:', selectedVariant.stock);
                 showToast(`Only ${selectedVariant.stock} item(s) in stock for the selected color. Please reduce quantity.`, 'error');
                 return;
             }
@@ -223,27 +260,48 @@
                 price: selectedVariant.price // Use price from variant, in case it differs
             };
 
+            console.log('Adding item to cart:', item);
             cart.push(item);
             updateCartDisplay();
+            localStorage.setItem('cart', JSON.stringify(cart)); // Save cart after adding item
+            console.log('Cart saved to localStorage. Current cart:', cart);
             
             // Reset selections
             selectedColor = '';
             selectedSize = '';
             quantity = 1;
-            document.getElementById('selectedColor').textContent = 'None';
-            document.getElementById('selectedSize').textContent = 'None';
-            document.getElementById('quantity').textContent = '1';
+            
+            const selectedColorElement = document.getElementById('selectedColor');
+            const selectedSizeElement = document.getElementById('selectedSize');
+            const quantityElement = document.getElementById('quantity');
+            
+            if (selectedColorElement) selectedColorElement.textContent = 'None';
+            if (selectedSizeElement) selectedSizeElement.textContent = 'None';
+            if (quantityElement) quantityElement.textContent = '1';
+            
             document.querySelectorAll('.color-option, .size-option').forEach(el => el.classList.remove('selected'));
 
-            // alert('Item added to cart!');
             showToast('Item added to cart!', 'success');
+        }
+        
+        // Function to save cart to localStorage
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            console.log('Cart saved to localStorage:', cart);
         }
 
         // Update cart display
         function updateCartDisplay() {
+            console.log('Updating cart display with cart:', cart);
+            
             const cartCount = document.getElementById('cart-count');
             const cartItemsContainer = document.getElementById('cartItems');
             const cartTotalEl = document.getElementById('cartTotal');
+            
+            if (!cartCount || !cartItemsContainer || !cartTotalEl) {
+                console.error('Cart elements not found in the DOM');
+                return;
+            }
 
             if (cart.length > 0) {
                 cartCount.style.display = 'inline';
@@ -280,19 +338,29 @@
                 });
                 
                 cartTotalEl.textContent = `$${total.toFixed(2)}`;
+                console.log('Cart updated with items, total:', total.toFixed(2));
                 
                 // Order section visibility: Show if cart is visible AND has items
-                if (document.getElementById('cartSection').style.display === 'block') {
-                    document.getElementById('orderSection').style.display = 'block';
-                } else {
+                const cartSection = document.getElementById('cartSection');
+                const orderSection = document.getElementById('orderSection');
+                
+                if (cartSection && cartSection.style.display !== 'none' && orderSection) {
+                    orderSection.style.display = 'block';
+                } else if (orderSection) {
                     // If cart is not visible, order section should also not be (e.g. if cart was closed)
-                     document.getElementById('orderSection').style.display = 'none';
+                    orderSection.style.display = 'none';
                 }
             } else {
                 cartCount.style.display = 'none';
                 cartItemsContainer.innerHTML = '<p class="text-center text-muted py-4">Your cart is empty. Add some items!</p>';
                 cartTotalEl.textContent = '$0.00';
-                document.getElementById('orderSection').style.display = 'none'; // Hide order section if cart is empty
+                
+                const orderSection = document.getElementById('orderSection');
+                if (orderSection) {
+                    orderSection.style.display = 'none'; // Hide order section if cart is empty
+                }
+                
+                console.log('Cart is empty, display updated');
             }
         }
 
@@ -304,6 +372,7 @@
                     removeFromCart(index); // This will trigger updateCartDisplay, which handles orderSection
                 } else {
                     updateCartDisplay();
+                    localStorage.setItem('cart', JSON.stringify(cart)); // Save cart after updating quantity
                 }
             }
         }
@@ -312,6 +381,7 @@
         function removeFromCart(index) {
             cart.splice(index, 1);
             updateCartDisplay(); // This will hide orderSection if cart becomes empty
+            localStorage.setItem('cart', JSON.stringify(cart)); // Save cart after removing item
         }
 
         // Toggle cart visibility
@@ -332,13 +402,21 @@
 
         // Proceed to Order (scrolls to order form)
         function proceedToOrder() {
+            console.log('Proceeding to order with cart:', cart);
+            
             const orderSection = document.getElementById('orderSection');
+            if (!orderSection) {
+                console.error('Order section not found in the DOM');
+                return;
+            }
+            
             if (cart.length > 0) { 
                 orderSection.style.display = 'block';
                 orderSection.scrollIntoView({ behavior: 'smooth' });
+                console.log('Order section displayed and scrolled into view');
             } else {
-                // alert('Your cart is empty. Please add items before proceeding to order.');
                 showToast('Your cart is empty. Add items first.', 'error');
+                console.log('Cannot proceed to order: cart is empty');
             }
         }
 
@@ -374,90 +452,429 @@
         });
 
         // Handle order form submission
-        document.getElementById('orderForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            if (cart.length === 0) {
-                // alert('Your cart is empty!');
-                showToast('Your cart is empty! Cannot submit order.', 'error');
+        document.addEventListener('DOMContentLoaded', function() {
+            const orderForm = document.getElementById('orderForm');
+            if (!orderForm) {
+                console.error('Order form not found in the DOM');
                 return;
             }
-
-            const name = document.getElementById('customerName').value;
-            const phone = document.getElementById('customerPhone').value;
-            const address = document.getElementById('deliveryAddress').value;
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked') ? document.querySelector('input[name="paymentMethod"]:checked').value : 'Not specified';
-
-            let plainAddress = address;
-            // Extract just the core address part if it includes the map link for cleaner display in message
-            if (address.includes("(Map:")) {
-                plainAddress = address.substring(0, address.indexOf("(Map:")).trim();
-            }
-
-            // Create order summary
-            let orderText = `🛍️ *NEW ORDER RECEIVED* 🛍️\n\n`;
-            orderText += `👤 *Customer Details:*\n`;
-            orderText += `   - Name: ${name}\n`;
-            orderText += `   - Phone: ${phone}\n`;
-            orderText += `   - Address: ${plainAddress}\n`;
-            if (address.includes("https://www.google.com/maps?q=")) {
-                const mapUrl = address.substring(address.indexOf("https://www.google.com/maps?q="), address.lastIndexOf(")")).trim();
-                orderText += `   - Map Link: ${mapUrl}\n`;
-            }
-            orderText += `   - Payment Method: ${paymentMethod}\n`;
-            orderText += `\n🛒 *Order Summary:*\n`;
-            orderText += `-------------------------------------\n`;
             
-            let total = 0;
-            let totalQuantity = 0;
-            cart.forEach((item, index) => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-                totalQuantity += item.quantity;
-                orderText += `*Item ${index + 1}: ${item.name}*\n`;
-                orderText += `   - Color: ${item.color}\n`;
-                orderText += `   - Size: ${item.size}\n`;
-                orderText += `   - Quantity: ${item.quantity}\n`;
-                orderText += `   - Subtotal: $${itemTotal.toFixed(2)}\n`;
+            orderForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Order form submitted');
+                
+                if (cart.length === 0) {
+                    showToast('Your cart is empty! Cannot submit order.', 'error');
+                    console.error('Cannot submit order: cart is empty');
+                    return;
+                }
+
+                const customerNameEl = document.getElementById('customerName');
+                const customerPhoneEl = document.getElementById('customerPhone');
+                const deliveryAddressEl = document.getElementById('deliveryAddress');
+                
+                if (!customerNameEl || !customerPhoneEl || !deliveryAddressEl) {
+                    console.error('Required form elements not found');
+                    showToast('Form error: Required fields not found', 'error');
+                    return;
+                }
+                
+                const name = customerNameEl.value;
+                const phone = customerPhoneEl.value;
+                const address = deliveryAddressEl.value;
+                
+                // Get selected payment method
+                let paymentMethod = 'Not specified';
+                const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+                if (selectedPaymentMethod) {
+                    paymentMethod = selectedPaymentMethod.value;
+                } else {
+                    console.warn('No payment method selected, using default');
+                }
+
+                console.log('Order details:', { name, phone, address, paymentMethod });
+
+                let plainAddress = address;
+                // Extract just the core address part if it includes the map link for cleaner display in message
+                if (address.includes("(Map:")) {
+                    plainAddress = address.substring(0, address.indexOf("(Map:")).trim();
+                }
+
+                // Create order summary
+                let orderText = `🛍️ *NEW ORDER RECEIVED* 🛍️\n\n`;
+                orderText += `👤 *Customer Details:*\n`;
+                orderText += `   - Name: ${name}\n`;
+                orderText += `   - Phone: ${phone}\n`;
+                orderText += `   - Address: ${plainAddress}\n`;
+                if (address.includes("https://www.google.com/maps?q=")) {
+                    const mapUrl = address.substring(address.indexOf("https://www.google.com/maps?q="), address.lastIndexOf(")")).trim();
+                    orderText += `   - Map Link: ${mapUrl}\n`;
+                }
+                orderText += `   - Payment Method: ${paymentMethod}\n`;
+                orderText += `\n🛒 *Order Summary:*\n`;
                 orderText += `-------------------------------------\n`;
-            });
-            
-            orderText += `\n📦 *Total Items: ${totalQuantity}*\n`;
-            orderText += `💰 *GRAND TOTAL: $${total.toFixed(2)}*\n\n`;
-            orderText += `Please confirm this order and provide payment details.\n`;
-            orderText += `Thank you! 🙏`;
+                
+                let total = 0;
+                let totalQuantity = 0;
+                cart.forEach((item, index) => {
+                    const itemTotal = item.price * item.quantity;
+                    total += itemTotal;
+                    totalQuantity += item.quantity;
+                    orderText += `*Item ${index + 1}: ${item.name}*\n`;
+                    orderText += `   - Color: ${item.color}\n`;
+                    orderText += `   - Size: ${item.size}\n`;
+                    orderText += `   - Quantity: ${item.quantity}\n`;
+                    orderText += `   - Subtotal: $${itemTotal.toFixed(2)}\n`;
+                    orderText += `-------------------------------------\n`;
+                });
+                
+                orderText += `\n📦 *Total Items: ${totalQuantity}*\n`;
+                orderText += `💰 *GRAND TOTAL: $${total.toFixed(2)}*\n\n`;
+                orderText += `Please confirm this order and provide payment details.\n`;
+                orderText += `Thank you! 🙏`;
 
-            // Create WhatsApp URL
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(orderText)}`;
-            
-            // Open WhatsApp
-            window.open(whatsappUrl, '_blank');
-            
-            // Clear cart after order
-            cart = [];
-            updateCartDisplay();
-            this.reset();
-            
-            // alert('Order sent to WhatsApp! We will contact you soon.');
-            showToast('Order details sent to WhatsApp! We will contact you soon.', 'success', 5000);
+                // Log the formatted order text
+                console.log('Formatted order message:', orderText);
+                
+                // Check that WhatsApp number is set
+                if (!WHATSAPP_NUMBER || WHATSAPP_NUMBER === '+') {
+                    console.error('WhatsApp number not set or invalid:', WHATSAPP_NUMBER);
+                    showToast('Error: WhatsApp number not configured', 'error');
+                    return;
+                }
+
+                // Create WhatsApp URL
+                const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(orderText)}`;
+                console.log('Opening WhatsApp with URL:', whatsappUrl);
+                
+                try {
+                    // Open WhatsApp
+                    window.open(whatsappUrl, '_blank');
+                    
+                    // Clear cart after order
+                    cart = [];
+                    localStorage.removeItem('cart'); // Clear cart from localStorage
+                    updateCartDisplay();
+                    orderForm.reset();
+                    
+                    showToast('Order details sent to WhatsApp! We will contact you soon.', 'success', 5000);
+                    console.log('Order completed and cart cleared');
+                } catch (error) {
+                    console.error('Error opening WhatsApp:', error);
+                    showToast('Error sending order to WhatsApp. Please try again.', 'error');
+                }
+            });
         });
 
-        // Initialize
-        // updateCartDisplay(); // Call this to set initial state (cart empty, order form hidden)
-        // Ensure order section is hidden on initial load, regardless of cart items (which should be 0)
-        document.addEventListener('DOMContentLoaded', () => {
-            // document.getElementById('cartSection').style.display = 'none'; // Cart is now visible by default
-            document.getElementById('orderSection').style.display = 'none'; // Order form starts hidden
+        // --- Rain Effect ---
+        function initRainEffect() {
+            const canvas = document.getElementById('rainCanvas');
+            if (!canvas) return;
             
-            renderColorOptions(); // Render color options with stock status
-            if (productVariants.length > 0) { // Select the first available color by default
-                const firstAvailableVariant = productVariants.find(v => v.stock > 0) || productVariants[0];
-                 selectColor(firstAvailableVariant.name);
+            const ctx = canvas.getContext('2d');
+            const drops = [];
+            const maxDrops = 100;
+            
+            // Resize canvas to match hero section size
+            function resizeCanvas() {
+                const heroSection = document.querySelector('.hero-section');
+                canvas.width = heroSection.offsetWidth;
+                canvas.height = heroSection.offsetHeight;
             }
             
-            updateCartDisplay(); // Initialize cart display (will show empty message)
-            initRainEffect(); // Initialize rain effect
+            // Create initial drops
+            function createDrops() {
+                for (let i = 0; i < maxDrops; i++) {
+                    drops.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        length: Math.random() * 15 + 5,
+                        speed: Math.random() * 5 + 2
+                    });
+                }
+            }
+            
+            // Draw animation
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = 'rgba(174, 194, 224, 0.5)';
+                ctx.lineWidth = 1;
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const drop = drops[i];
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(drop.x, drop.y);
+                    ctx.lineTo(drop.x, drop.y + drop.length);
+                    ctx.stroke();
+                    
+                    drop.y += drop.speed;
+                    
+                    // Reset drop when it goes out of canvas
+                    if (drop.y > canvas.height) {
+                        drop.y = 0 - drop.length;
+                        drop.x = Math.random() * canvas.width;
+                    }
+                }
+                
+                requestAnimationFrame(draw);
+            }
+            
+            // Initialize
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            createDrops();
+            draw();
+        }
+        // --- End Rain Effect ---
 
+        // Function to load base product settings from localStorage
+        function loadBaseProductSettings() {
+            const savedBaseProduct = localStorage.getItem('baseProduct');
+            if (savedBaseProduct) {
+                try {
+                    const parsedSettings = JSON.parse(savedBaseProduct);
+                    
+                    // Update base product settings
+                    if (parsedSettings.enableColorSelection !== undefined) {
+                        baseProductSettings.enableColorSelection = parsedSettings.enableColorSelection;
+                    }
+                    
+                    if (parsedSettings.enabledColors && Array.isArray(parsedSettings.enabledColors)) {
+                        baseProductSettings.enabledColors = parsedSettings.enabledColors;
+                    }
+                    
+                    if (parsedSettings.sizes && Array.isArray(parsedSettings.sizes)) {
+                        baseProductSettings.sizes = parsedSettings.sizes;
+                    }
+                    
+                    // Update sizes in the size selection UI
+                    updateSizeOptions();
+                    
+                    // Filter product variants based on enabled colors
+                    filterProductVariants();
+                    
+                } catch (e) {
+                    console.error('Error parsing base product settings:', e);
+                }
+            }
+        }
+        
+        // Function to update size options based on baseProductSettings
+        function updateSizeOptions() {
+            const sizeContainer = document.getElementById('sizeOptionsContainer');
+            if (!sizeContainer) {
+                console.error('Size options container not found in the DOM');
+                return;
+            }
+            
+            // Check if there are already size options (static fallback)
+            const existingSizeOptions = sizeContainer.querySelectorAll('.size-option');
+            if (existingSizeOptions.length > 0) {
+                console.log('Static size options found, checking if update needed');
+                
+                // If the sizes in baseProductSettings are the same as the existing ones, keep them
+                const existingSizes = Array.from(existingSizeOptions).map(el => el.dataset.size);
+                const sizesMatch = baseProductSettings.sizes.length === existingSizes.length && 
+                                  baseProductSettings.sizes.every(size => existingSizes.includes(size));
+                
+                if (sizesMatch) {
+                    console.log('Existing size options match settings, keeping them');
+                    return; // No need to update
+                }
+            }
+            
+            // Clear and recreate size options
+            console.log('Updating size options with:', baseProductSettings.sizes);
+            sizeContainer.innerHTML = '';
+            
+            baseProductSettings.sizes.forEach(size => {
+                const sizeOption = document.createElement('div');
+                sizeOption.className = 'size-option';
+                sizeOption.dataset.size = size;
+                sizeOption.textContent = size;
+                sizeOption.onclick = () => selectSize(size);
+                sizeContainer.appendChild(sizeOption);
+            });
+        }
+        
+        // Function to filter product variants based on enabled colors
+        function filterProductVariants() {
+            // If color selection is disabled, show all variants
+            if (!baseProductSettings.enableColorSelection) {
+                return;
+            }
+            
+            // Filter out disabled colors from thumbnails
+            const thumbnailContainer = document.querySelector('.thumbnail-images');
+            if (thumbnailContainer) {
+                const thumbnails = thumbnailContainer.querySelectorAll('.img-thumbnail');
+                thumbnails.forEach(thumb => {
+                    const colorName = thumb.alt.split(' ').pop();
+                    if (baseProductSettings.enabledColors.includes(colorName)) {
+                        thumb.style.display = '';
+                    } else {
+                        thumb.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Apply site settings from localStorage
+        function applySiteSettings() {
+            const savedSettings = localStorage.getItem('siteSettings');
+            if (!savedSettings) return;
+            
+            try {
+                const siteSettings = JSON.parse(savedSettings);
+                
+                // Apply logo settings
+                if (siteSettings.logo) {
+                    const logoImg = document.getElementById('site-logo');
+                    const siteTitle = document.getElementById('site-title');
+                    
+                    if (logoImg && siteSettings.logo.url && siteSettings.logo.url.trim() !== '') {
+                        logoImg.src = siteSettings.logo.url;
+                        logoImg.style.display = 'inline-block';
+                    }
+                    
+                    if (siteTitle && siteSettings.logo.title) {
+                        siteTitle.textContent = siteSettings.logo.title;
+                    }
+                }
+                
+                // Apply WhatsApp number
+                if (siteSettings.contact && siteSettings.contact.whatsappNumber) {
+                    // Update the global WhatsApp number
+                    window.WHATSAPP_NUMBER = '+' + siteSettings.contact.whatsappNumber;
+                    
+                    // Update any WhatsApp links in the page
+                    const whatsappBtn = document.getElementById('whatsappNavButton');
+                    if (whatsappBtn) {
+                        whatsappBtn.href = `https://wa.me/${siteSettings.contact.whatsappNumber}`;
+                    }
+                }
+                
+                // Apply hero section settings
+                if (siteSettings.hero) {
+                    // Update hero heading
+                    const heroHeading = document.querySelector('.hero-section h1');
+                    if (heroHeading && siteSettings.hero.heading) {
+                        heroHeading.textContent = siteSettings.hero.heading;
+                    }
+                    
+                    // Update hero subheading
+                    const heroSubheading = document.querySelector('.hero-section p.lead');
+                    if (heroSubheading && siteSettings.hero.subheading) {
+                        heroSubheading.textContent = siteSettings.hero.subheading;
+                    }
+                    
+                    // Update sale badge
+                    const saleBadge = document.querySelector('.sale-badge');
+                    if (saleBadge) {
+                        if (siteSettings.hero.showSaleBadge && siteSettings.hero.saleText) {
+                            saleBadge.innerHTML = `<i class="fas fa-tags me-2"></i> ${siteSettings.hero.saleText}`;
+                            saleBadge.parentElement.style.display = 'block';
+                        } else {
+                            saleBadge.parentElement.style.display = 'none';
+                        }
+                    }
+                    
+                    // Apply discount to product price
+                    if (siteSettings.hero.discountPercentage > 0) {
+                        const discount = siteSettings.hero.discountPercentage / 100;
+                        const originalPrice = 28.99; // Hardcoded original price
+                        const discountedPrice = (originalPrice * (1 - discount)).toFixed(2);
+                        
+                        // Update price display in the product details section
+                        const priceElement = document.querySelector('.price-section .h2');
+                        const originalPriceElement = document.querySelector('.price-section .h5');
+                        const savingsElement = document.querySelector('.price-section .text-success');
+                        
+                        if (priceElement) {
+                            priceElement.textContent = `$${discountedPrice}`;
+                        }
+                        
+                        if (originalPriceElement) {
+                            originalPriceElement.textContent = `$${originalPrice}`;
+                        }
+                        
+                        if (savingsElement) {
+                            const savings = (originalPrice - discountedPrice).toFixed(2);
+                            savingsElement.textContent = `✨ You save $${savings}!`;
+                        }
+                        
+                        // Update product variants prices
+                        productVariants.forEach(variant => {
+                            variant.price = parseFloat(discountedPrice);
+                        });
+                    }
+                }
+                
+            } catch (e) {
+                console.error('Error applying site settings:', e);
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded and parsed');
+            
+            // Make sure size options are loaded from the baseProductSettings
+            baseProductSettings.sizes = ["S", "M", "L", "XL", "XXL"]; // Default sizes
+            
+            // Load base product settings
+            loadBaseProductSettings();
+            console.log('Base product settings loaded:', baseProductSettings);
+            
+            // Update size options directly (separate from loadBaseProductSettings)
+            updateSizeOptions();
+            console.log('Size options updated');
+        
+            // Apply site settings from localStorage
+            applySiteSettings();
+            
+            // Render color options
+            renderColorOptions();
+            
+            // Set default selected color (first available)
+            const firstAvailableVariant = productVariants.find(v => {
+                return v.stock > 0 && 
+                       (!baseProductSettings.enableColorSelection || 
+                        baseProductSettings.enabledColors.includes(v.name));
+            });
+            
+            if (firstAvailableVariant) {
+                selectColor(firstAvailableVariant.name);
+                console.log('Selected default color:', firstAvailableVariant.name);
+            }
+            
+            // Initialize rain effect for hero section
+            initRainEffect();
+            
+            // Initialize cart from localStorage
+            const savedCart = localStorage.getItem('cart');
+            console.log('Saved cart from localStorage:', savedCart);
+            
+            if (savedCart) {
+                try {
+                    cart = JSON.parse(savedCart);
+                    console.log('Cart loaded successfully:', cart);
+                    updateCartDisplay();
+                    document.getElementById('cart-count').textContent = cart.length;
+                    document.getElementById('cart-count').style.display = cart.length > 0 ? 'inline' : 'none';
+                } catch (e) {
+                    console.error('Error loading cart:', e);
+                }
+            } else {
+                // Initialize empty cart display
+                console.log('No saved cart found, initializing empty cart');
+                updateCartDisplay();
+            }
+            
+            // Make sure order section is hidden on initial load
+            document.getElementById('orderSection').style.display = 'none';
+            
             // --- Custom Modal Logic --- START
             const namePromptModal = document.getElementById('namePromptModal');
             const userNameInput = document.getElementById('userNameInput');
@@ -501,7 +918,7 @@
                     }
                 });
             }
-
+            
             if (cancelNameBtn) {
                 cancelNameBtn.addEventListener('click', hideNamePromptModal);
             }
@@ -516,76 +933,18 @@
                     window.open(whatsappUrl, '_blank');
                 });
             }
-
+            
             // Event listener for Floating Support Button
             const floatingSupportBtn = document.querySelector('.floating-support-btn');
             if (floatingSupportBtn) {
                 floatingSupportBtn.addEventListener('click', function(e) {
                     e.preventDefault(); // Prevent default link navigation
-                    showNamePromptModal(); // NEW: Show custom modal
+                    showNamePromptModal(); // Show custom modal
                 });
             }
+            
+            // Save cart to localStorage when it changes
+            window.addEventListener('beforeunload', function() {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            });
         });
-
-        // --- Rain Effect for Hero Section ---
-        function initRainEffect() {
-            const canvas = document.getElementById('rainCanvas');
-            if (!canvas) return;
-            const heroSection = document.querySelector('.hero-section');
-            if (!heroSection) return;
-
-            const ctx = canvas.getContext('2d');
-            let drops = [];
-
-            function resizeCanvas() {
-                canvas.width = heroSection.offsetWidth;
-                canvas.height = heroSection.offsetHeight;
-                createDrops(); // Recreate drops on resize for new dimensions
-            }
-
-            function createDrops() {
-                drops = [];
-                const numberOfDrops = 100; // Adjust for density
-                for (let i = 0; i < numberOfDrops; i++) {
-                    drops.push({
-                        x: Math.random() * canvas.width,
-                        y: Math.random() * canvas.height, // Start at random y positions
-                        radius: Math.random() * 2 + 1, // Random radius (1 to 3px)
-                        speed: Math.random() * 2 + 1,  // Random speed (1 to 3)
-                        opacity: Math.random() * 0.5 + 0.3 // Random opacity (0.3 to 0.8)
-                    });
-                }
-            }
-
-            function draw() {
-                if (!ctx || !canvas) return;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                drops.forEach(drop => {
-                    ctx.beginPath();
-                    ctx.arc(drop.x, drop.y, drop.radius, 0, Math.PI * 2);
-                    // Use off-white/gray color
-                    ctx.fillStyle = `rgba(220, 220, 220, ${drop.opacity})`; 
-                    ctx.fill();
-
-                    drop.y += drop.speed;
-
-                    // Reset drop to top if it goes off screen
-                    if (drop.y - drop.radius > canvas.height) {
-                        drop.y = 0 - drop.radius; // Start just above the screen
-                        drop.x = Math.random() * canvas.width; // New random x position
-                        // Optionally, slightly change radius/speed/opacity for variety on reset
-                        drop.radius = Math.random() * 2 + 1;
-                        drop.speed = Math.random() * 2 + 1;
-                        drop.opacity = Math.random() * 0.5 + 0.3;
-                    }
-                });
-
-                requestAnimationFrame(draw);
-            }
-
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas(); // Initial setup
-            draw(); // Start animation
-        }
-        // --- End Rain Effect --- 

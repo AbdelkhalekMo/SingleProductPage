@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productVariants = [
         { name: "Red", imageSrc: "assets/red.png", colorCode: "#dc3545", stock: 10, price: 19.99 },
         { name: "White", imageSrc: "assets/white.png", colorCode: "#ffffff", stock: 5, price: 19.99, border: "2px solid #ddd" },
-        { name: "Black", imageSrc: "assets/black.jpeg", colorCode: "#212529", stock: 0, price: 19.99 },
+        { name: "Black", imageSrc: "assets/black.jpeg", colorCode: "#000000", stock: 15, price: 19.99 },
         { name: "Gray", imageSrc: "assets/gray.png", colorCode: "#6c757d", stock: 20, price: 19.99 },
         { name: "Green", imageSrc: "assets/green.png", colorCode: "#198754", stock: 2, price: 19.99 },
         { name: "Blue", imageSrc: "assets/blue.png", colorCode: "#0d6efd", stock: 15, price: 19.99 }
@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseProduct = {
         name: "Premium Cotton T-Shirt",
         description: "Made from 100% premium cotton, our t-shirts offer unmatched comfort and durability. Perfect for casual wear or as a wardrobe staple.",
-        sizes: ["S", "M", "L", "XL", "XXL"]
+        sizes: ["S", "M", "L", "XL", "XXL"],
+        enableColorSelection: true,
+        enabledColors: ["Red", "White", "Black", "Gray", "Green", "Blue"]
     };
 
     sidebarLinks.forEach(link => {
@@ -76,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 variantImagePreview.style.display = 'none';
             } else {
                 productForm.reset();
-                document.getElementById('productName').value = baseProduct.name; // Set default product name
                 variantIdField.value = '';
                 variantImagePreview.style.display = 'none';
                 updateColorPreview('#000000'); // Default black
@@ -87,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             addProductFormCard.style.display = 'none';
             productForm.reset();
-            document.getElementById('productName').value = baseProduct.name; // Reset to default
             variantIdField.value = '';
             addVariantBtn.textContent = 'Add New Variant';
             addVariantBtn.classList.replace('btn-warning', 'btn-success');
@@ -160,11 +160,128 @@ document.addEventListener('DOMContentLoaded', () => {
             // Populate modal with base product data
             document.getElementById('baseProductName').value = baseProduct.name;
             document.getElementById('baseProductDescription').value = baseProduct.description;
-            document.getElementById('baseProductSizes').value = baseProduct.sizes.join(', ');
+            
+            // Populate sizes
+            renderSizes();
+            
+            // Setup color selection
+            setupColorSelection();
             
             bsModal.show();
         });
     }
+
+    // Function to render size badges
+    function renderSizes() {
+        const sizesContainer = document.getElementById('sizesContainer');
+        if (!sizesContainer) return;
+        
+        sizesContainer.innerHTML = '';
+        
+        baseProduct.sizes.forEach(size => {
+            const sizeTag = document.createElement('div');
+            sizeTag.className = 'badge bg-secondary p-2 position-relative';
+            sizeTag.innerHTML = `
+                ${size}
+                <button type="button" class="btn-close btn-close-white ms-2" 
+                        style="font-size: 0.5rem;" 
+                        data-size="${size}"></button>
+            `;
+            sizesContainer.appendChild(sizeTag);
+            
+            // Add event listener to delete button
+            const deleteBtn = sizeTag.querySelector('.btn-close');
+            deleteBtn.addEventListener('click', function() {
+                const sizeToRemove = this.getAttribute('data-size');
+                baseProduct.sizes = baseProduct.sizes.filter(s => s !== sizeToRemove);
+                renderSizes();
+            });
+        });
+    }
+    
+    // Function to setup color selection
+    function setupColorSelection() {
+        const enableColorSelection = document.getElementById('enableColorSelection');
+        const colorSelectionControls = document.getElementById('colorSelectionControls');
+        const availableColorsContainer = document.getElementById('availableColorsContainer');
+        
+        if (!enableColorSelection || !colorSelectionControls || !availableColorsContainer) return;
+        
+        // Set initial state
+        enableColorSelection.checked = baseProduct.enableColorSelection;
+        colorSelectionControls.style.display = baseProduct.enableColorSelection ? 'block' : 'none';
+        
+        // Event listener for enable/disable toggle
+        enableColorSelection.addEventListener('change', function() {
+            baseProduct.enableColorSelection = this.checked;
+            colorSelectionControls.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Render available colors
+        availableColorsContainer.innerHTML = '';
+        
+        productVariants.forEach(variant => {
+            const colorName = variant.name;
+            const colorDiv = document.createElement('div');
+            colorDiv.className = 'form-check form-check-inline align-items-center';
+            colorDiv.innerHTML = `
+                <input class="form-check-input" type="checkbox" id="color-${colorName}" 
+                       ${baseProduct.enabledColors.includes(colorName) ? 'checked' : ''} 
+                       value="${colorName}">
+                <label class="form-check-label d-flex align-items-center" for="color-${colorName}">
+                    <span class="color-swatch" style="
+                        display: inline-block; 
+                        width: 20px; 
+                        height: 20px; 
+                        border-radius: 50%; 
+                        background-color: ${variant.colorCode};
+                        ${variant.border ? variant.border : ''}
+                        margin-right: 5px;"></span>
+                    ${colorName}
+                </label>
+            `;
+            availableColorsContainer.appendChild(colorDiv);
+            
+            // Add event listener for checkbox
+            const checkbox = colorDiv.querySelector(`#color-${colorName}`);
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    if (!baseProduct.enabledColors.includes(colorName)) {
+                        baseProduct.enabledColors.push(colorName);
+                    }
+                } else {
+                    baseProduct.enabledColors = baseProduct.enabledColors.filter(c => c !== colorName);
+                }
+            });
+        });
+    }
+    
+    // Add new size button
+    document.addEventListener('DOMContentLoaded', () => {
+        const addSizeBtn = document.getElementById('addSizeBtn');
+        const newSizeInput = document.getElementById('newSizeInput');
+        
+        if (addSizeBtn && newSizeInput) {
+            addSizeBtn.addEventListener('click', () => {
+                const newSize = newSizeInput.value.trim().toUpperCase();
+                if (newSize && !baseProduct.sizes.includes(newSize)) {
+                    baseProduct.sizes.push(newSize);
+                    renderSizes();
+                    newSizeInput.value = '';
+                } else if (baseProduct.sizes.includes(newSize)) {
+                    alert('This size already exists!');
+                }
+            });
+            
+            // Allow adding with Enter key
+            newSizeInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSizeBtn.click();
+                }
+            });
+        }
+    });
 
     // Save base product changes
     if (saveBaseProductBtn) {
@@ -172,7 +289,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // In a real app, this would save to an API
             baseProduct.name = document.getElementById('baseProductName').value;
             baseProduct.description = document.getElementById('baseProductDescription').value;
-            baseProduct.sizes = document.getElementById('baseProductSizes').value.split(',').map(size => size.trim());
+            
+            // Get color selection settings
+            baseProduct.enableColorSelection = document.getElementById('enableColorSelection').checked;
+            baseProduct.enabledColors = [];
+            
+            // Get all checked color checkboxes
+            document.querySelectorAll('#availableColorsContainer input[type="checkbox"]:checked').forEach(checkbox => {
+                baseProduct.enabledColors.push(checkbox.value);
+            });
             
             // Update product name in the variant form
             document.getElementById('productName').value = baseProduct.name;
@@ -182,6 +307,30 @@ document.addEventListener('DOMContentLoaded', () => {
             productNameCells.forEach(cell => {
                 cell.textContent = baseProduct.name;
             });
+            
+            // Update UI based on enabled colors
+            if (!baseProduct.enableColorSelection) {
+                // If color selection is disabled, show all variants
+                document.querySelectorAll('#productList tr').forEach(row => {
+                    row.style.display = '';
+                });
+            } else {
+                // Hide disabled color variants
+                document.querySelectorAll('#productList tr').forEach(row => {
+                    const colorCell = row.querySelector('td:nth-child(3)');
+                    if (colorCell) {
+                        const colorName = colorCell.textContent.trim().split(' ').pop(); // Get color name
+                        if (!baseProduct.enabledColors.includes(colorName)) {
+                            row.style.display = 'none';
+                        } else {
+                            row.style.display = '';
+                        }
+                    }
+                });
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('baseProduct', JSON.stringify(baseProduct));
             
             alert('Base product details updated successfully!');
             
@@ -330,4 +479,158 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- Site Settings Functionality ---
+    
+    // Default site settings
+    const siteSettings = {
+        logo: {
+            url: '',
+            title: 'StyleShop'
+        },
+        contact: {
+            whatsappNumber: '201157299077'
+        },
+        hero: {
+            heading: 'Elevate Your Style with Our Premium T-Shirt Collection',
+            subheading: 'Experience unparalleled comfort and sophisticated design. Crafted for the modern individual.',
+            saleText: 'Limited Time: 30% OFF!',
+            discountPercentage: 30,
+            showSaleBadge: true
+        }
+    };
+    
+    // Load settings from localStorage if available
+    function loadSiteSettings() {
+        const savedSettings = localStorage.getItem('siteSettings');
+        if (savedSettings) {
+            try {
+                const parsedSettings = JSON.parse(savedSettings);
+                Object.assign(siteSettings, parsedSettings);
+            } catch (e) {
+                console.error('Error parsing saved settings:', e);
+            }
+        }
+        
+        // Populate form fields with current settings
+        populateSiteSettingsForms();
+    }
+    
+    // Save settings to localStorage
+    function saveSiteSettings() {
+        localStorage.setItem('siteSettings', JSON.stringify(siteSettings));
+        alert('Settings saved successfully!');
+    }
+    
+    // Populate all site settings forms with current values
+    function populateSiteSettingsForms() {
+        // Logo & Brand Settings
+        const logoForm = document.getElementById('logoSettingsForm');
+        if (logoForm) {
+            document.getElementById('siteLogo').value = siteSettings.logo.url || '';
+            document.getElementById('siteTitle').value = siteSettings.logo.title || 'StyleShop';
+            updateLogoPreview();
+        }
+        
+        // Contact Settings
+        const contactForm = document.getElementById('contactSettingsForm');
+        if (contactForm) {
+            document.getElementById('whatsappNumber').value = siteSettings.contact.whatsappNumber || '';
+        }
+        
+        // Hero Settings
+        const heroForm = document.getElementById('heroSettingsForm');
+        if (heroForm) {
+            document.getElementById('heroHeading').value = siteSettings.hero.heading || '';
+            document.getElementById('heroSubheading').value = siteSettings.hero.subheading || '';
+            document.getElementById('saleText').value = siteSettings.hero.saleText || '';
+            document.getElementById('discountPercentage').value = siteSettings.hero.discountPercentage || '';
+            document.getElementById('showSaleBadge').checked = siteSettings.hero.showSaleBadge;
+        }
+    }
+    
+    // Update logo preview
+    function updateLogoPreview() {
+        const logoPreview = document.getElementById('logoPreview');
+        const logoUrl = document.getElementById('siteLogo').value;
+        
+        if (logoPreview) {
+            if (logoUrl && logoUrl.trim() !== '') {
+                logoPreview.innerHTML = `<img src="${logoUrl}" alt="Logo Preview" style="max-height: 100%; max-width: 100%;">`;
+            } else {
+                logoPreview.innerHTML = `<div class="alert alert-secondary">No logo image URL provided</div>`;
+            }
+        }
+    }
+    
+    // Event listeners for site settings forms
+    document.addEventListener('DOMContentLoaded', () => {
+        // ... existing code ...
+        
+        // Load site settings from localStorage
+        loadSiteSettings();
+        
+        // Logo Settings Form
+        const logoSettingsForm = document.getElementById('logoSettingsForm');
+        if (logoSettingsForm) {
+            const siteLogoInput = document.getElementById('siteLogo');
+            if (siteLogoInput) {
+                siteLogoInput.addEventListener('input', updateLogoPreview);
+            }
+            
+            logoSettingsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                siteSettings.logo.url = document.getElementById('siteLogo').value;
+                siteSettings.logo.title = document.getElementById('siteTitle').value;
+                
+                saveSiteSettings();
+            });
+        }
+        
+        // Contact Settings Form
+        const contactSettingsForm = document.getElementById('contactSettingsForm');
+        if (contactSettingsForm) {
+            contactSettingsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                siteSettings.contact.whatsappNumber = document.getElementById('whatsappNumber').value;
+                
+                saveSiteSettings();
+            });
+        }
+        
+        // Hero Settings Form
+        const heroSettingsForm = document.getElementById('heroSettingsForm');
+        if (heroSettingsForm) {
+            heroSettingsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                siteSettings.hero.heading = document.getElementById('heroHeading').value;
+                siteSettings.hero.subheading = document.getElementById('heroSubheading').value;
+                siteSettings.hero.saleText = document.getElementById('saleText').value;
+                siteSettings.hero.discountPercentage = document.getElementById('discountPercentage').value;
+                siteSettings.hero.showSaleBadge = document.getElementById('showSaleBadge').checked;
+                
+                // Calculate and update product prices based on discount
+                if (siteSettings.hero.discountPercentage > 0) {
+                    // In a real app, this would update the database
+                    // Here we're just updating the UI
+                    const discount = siteSettings.hero.discountPercentage / 100;
+                    
+                    // Update product prices in UI
+                    const priceElements = document.querySelectorAll('#productList td:nth-child(4)');
+                    if (priceElements.length > 0) {
+                        priceElements.forEach(cell => {
+                            const originalPrice = 28.99; // Hardcoded original price
+                            const discountedPrice = (originalPrice * (1 - discount)).toFixed(2);
+                            cell.textContent = `$${discountedPrice}`;
+                        });
+                    }
+                }
+                
+                saveSiteSettings();
+            });
+        }
+    });
 }); 
